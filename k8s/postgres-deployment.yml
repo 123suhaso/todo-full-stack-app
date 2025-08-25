@@ -29,11 +29,15 @@ spec:
               value: "my_first_db"
           volumeMounts:
             - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql/data/pgdata
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
             claimName: postgres-pvc
+
 ---
 apiVersion: v1
 kind: Service
