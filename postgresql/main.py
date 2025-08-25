@@ -1,4 +1,4 @@
-# main.py
+# main.p
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db import get_db_connection
