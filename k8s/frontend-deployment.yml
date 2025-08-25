@@ -1,45 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data:
+  REACT_APP_BACKEND_URL: "http://backend-service:8000"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-deployment
+  name: frontend-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: backend
+      app: frontend
   template:
     metadata:
       labels:
-        app: backend
+        app: frontend
     spec:
-      initContainers:
-        - name: wait-for-postgres
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              until nc -z postgres-service 5432; do
-                echo "Waiting for Postgres..."
-                sleep 2
-              done
       containers:
-        - name: backend
+        - name: frontend
           image: ${{ secrets.DOCKER_USERNAME }}/postgresql:latest
           ports:
-            - containerPort: 8000
+            - containerPort: 80
           env:
-            - name: DATABASE_URL
-              value: "postgresql://postgres:mypassword@postgres-service:5432/my_first_db"
+            - name: REACT_APP_BACKEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-config
+                  key: REACT_APP_BACKEND_URL
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-service
+  name: frontend-service
 spec:
   selector:
-    app: backend
+    app: frontend
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 80
+      targetPort: 80
   type: LoadBalancer
