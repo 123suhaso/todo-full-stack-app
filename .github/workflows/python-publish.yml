@@ -65,14 +65,20 @@ jobs:
       # -------------------------------
       # 8. Deploy to AKS
       # -------------------------------
-      - name: Deploy Postgres
-        run: kubectl apply -f k8s/postgres.yml
+      - name: Deploy Postgres Secret
+        run: kubectl apply -f k8s/postgres-secret.yml
+
+      - name: Deploy Postgres PVC
+        run: kubectl apply -f k8s/postgres-pvc.yml
+
+      - name: Deploy Postgres Deployment
+        run: kubectl apply -f k8s/postgres-deployment.yml
 
       - name: Deploy Backend
-        run: kubectl apply -f k8s/backend.yml
+        run: kubectl apply -f k8s/backend-deployment.yml
 
       - name: Deploy Frontend
-        run: kubectl apply -f k8s/frontend.yml
+        run: kubectl apply -f k8s/frontend-deployment.yml
 
       # -------------------------------
       # 9. Verify deployments
