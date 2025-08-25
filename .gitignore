@@ -1,0 +1,37 @@
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+.env
+
+# Python / Backend
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+*.sqlite3
+.env
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+*.yaml.bak
+*.swp
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Other
+*.bak
+*.tmp
+*.log
