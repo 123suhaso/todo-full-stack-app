@@ -25,12 +25,12 @@ spec:
               done
       containers:
         - name: backend
-          image: ${{ secrets.DOCKER_USERNAME }}/todo-frontend:latest
+          image: ${{ secrets.DOCKER_USERNAME }}/postgresql:latest
           ports:
             - containerPort: 8000
           env:
             - name: DATABASE_URL
-              value: "postgresql://postgres:$(POSTGRES_PASSWORD)@postgres-service:5432/my_first_db"
+              value: "postgresql://postgres:mypassword@postgres-service:5432/my_first_db"
 ---
 apiVersion: v1
 kind: Service
