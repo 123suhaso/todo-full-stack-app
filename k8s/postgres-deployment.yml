@@ -21,10 +21,7 @@ spec:
             - name: POSTGRES_USER
               value: "postgres"
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_PASSWORD
+              value: "password"
             - name: POSTGRES_DB
               value: "my_first_db"
           volumeMounts:
