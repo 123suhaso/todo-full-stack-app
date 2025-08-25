@@ -16,7 +16,7 @@ spec:
         app: postgres
     spec:
       securityContext:
-        fsGroup: 999  # Fix permissions for mounted volume
+        fsGroup: 999
       containers:
         - name: postgres
           image: postgres:15
@@ -91,12 +91,13 @@ spec:
               done
       containers:
         - name: backend
-          image: 1234suhas/postgresql:latest  # Replace with your backend image
+          image: 1234suhas/postgresql:latest  # Update with your backend image
           ports:
             - containerPort: 8000
           env:
             - name: DATABASE_URL
               value: "postgresql://postgres:mypassword@postgres-service:5432/my_first_db"
+          restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
@@ -113,7 +114,6 @@ spec:
 ##########################
 # FRONTEND DEPLOYMENT
 ##########################
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -137,7 +137,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 1234suhas/todo-frontend:latest  # Replace with your frontend image
+          image: 1234suhas/todo-frontend:latest  # Update with your frontend image
           ports:
             - containerPort: 80
           env:
@@ -146,6 +146,7 @@ spec:
                 configMapKeyRef:
                   name: frontend-config
                   key: REACT_APP_BACKEND_URL
+          restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
