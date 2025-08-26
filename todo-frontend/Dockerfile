@@ -2,9 +2,14 @@
 FROM node:20 AS builder
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm install
+
+# Upgrade npm to latest stable version
+RUN npm install -g npm@11.5.2
+
+# Install dependencies with retry and alternate registry to avoid 429
+RUN npm install --fetch-retries=5 --fetch-retry-mintimeout=2000 --registry=https://registry.npmmirror.com
 
 # Copy all source files
 COPY . .
