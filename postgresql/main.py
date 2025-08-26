@@ -4,11 +4,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from db import get_db_connection
 from routers111 import todo, auth  # import your router
 
+# ------------------- Azure Application Insights -------------------
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.trace.samplers import ProbabilitySampler
+from opencensus.trace.tracer import Tracer
+
+# Replace with your actual Instrumentation Key (from Application Insights)
+INSTRUMENTATION_KEY = "4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
+
+# Logging setup
+logger = logging.getLogger(__name__)
+logger.addHandler(
+    AzureLogHandler(connection_string=f"InstrumentationKey={INSTRUMENTATION_KEY}")
+)
+
+# Tracing setup
+exporter = AzureExporter(connection_string=f"InstrumentationKey={INSTRUMENTATION_KEY}")
+tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
+
+
 app = FastAPI()
 
-app.get("/health")
+@app.get("/health")
 def health_check():
+    logger.warning("Health check called")  # logged to App Insights
     return {"status": "ok"}
+
 
 
 # CORS middleware
