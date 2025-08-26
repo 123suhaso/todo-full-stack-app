@@ -95,7 +95,7 @@ spec:
               done
       containers:
         - name: backend
-          image: 1234suhas/postgresql:latest  # Replace with your backend image
+          image: 1234suhas/fastapi-backend:latest  # Replace with your backend image
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
