@@ -6,3 +6,11 @@ bcrypt==3.2.2
 pydantic==2.5.1
 python-multipart>=0.0.7
 psycopg2-binary==2.9.9
+
+# Observability
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-logging
+azure-monitor-opentelemetry-exporter
