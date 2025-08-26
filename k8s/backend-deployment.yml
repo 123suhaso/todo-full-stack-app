@@ -101,8 +101,10 @@ spec:
           env:
             - name: DATABASE_URL
               value: "postgresql://postgres:mypassword@postgres-service:5432/my_first_db"
+              
             - name: APPLICATIONINSIGHTS_CONNECTION_STRING
-              value: "4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
+              value: "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
+
 ---
 apiVersion: v1
 kind: Service
