@@ -96,6 +96,7 @@ spec:
       containers:
         - name: backend
           image: 1234suhas/postgresql:latest  # Replace with your backend image
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
@@ -145,6 +146,7 @@ spec:
       containers:
         - name: frontend
           image: 1234suhas/todo-frontend:latest  # Replace with your frontend image
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           env:
