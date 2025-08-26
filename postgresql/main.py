@@ -1,40 +1,58 @@
-# main.p
+# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db import get_db_connection
-from routers111 import todo, auth  # import your router
+from routers111 import todo, auth
 
-# ------------------- Azure Application Insights -------------------
+# ----------------- OpenTelemetry -----------------
 import logging
-from opencensus.ext.azure.log_exporter import AzureLogHandler
-from opencensus.ext.azure.trace_exporter import AzureExporter
-from opencensus.trace.samplers import ProbabilitySampler
-from opencensus.trace.tracer import Tracer
+import os
 
-# Replace with your actual Instrumentation Key (from Application Insights)
-INSTRUMENTATION_KEY = "4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
+from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter, AzureMonitorLogExporter
 
-# Logging setup
-logger = logging.getLogger(__name__)
-logger.addHandler(
-    AzureLogHandler(connection_string=f"InstrumentationKey={INSTRUMENTATION_KEY}")
+# Connection string (set via K8s env var)
+connection_string = os.getenv(
+    "APPLICATIONINSIGHTS_CONNECTION_STRING",
+    "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
 )
 
-# Tracing setup
-exporter = AzureExporter(connection_string=f"InstrumentationKey={INSTRUMENTATION_KEY}")
-tracer = Tracer(exporter=exporter, sampler=ProbabilitySampler(1.0))
+# Resource attributes
+resource = Resource.create({"service.name": "fastapi-backend"})
 
+# Setup tracing
+trace_provider = TracerProvider(resource=resource)
+trace.set_tracer_provider(trace_provider)
 
+trace_exporter = AzureMonitorTraceExporter.from_connection_string(connection_string)
+trace_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
+
+# Setup logging
+LoggingInstrumentor().instrument(set_logging_format=True)
+log_exporter = AzureMonitorLogExporter.from_connection_string(connection_string)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# ----------------- FastAPI -----------------
 app = FastAPI()
+
+# Instrument FastAPI + Requests
+FastAPIInstrumentor.instrument_app(app)
+RequestsInstrumentor().instrument()
 
 @app.get("/health")
 def health_check():
-    logger.warning("Health check called")  # logged to App Insights
+    logger.info("Health check called")
     return {"status": "ok"}
 
-
-
-# CORS middleware
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,17 +61,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Routers
 app.include_router(todo.router)
 app.include_router(auth.router)
 
-# Initialize DB on startup
+# Startup (DB init)
 @app.on_event("startup")
 def startup():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 1️⃣ Create users table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -64,10 +81,8 @@ def startup():
             is_active BOOLEAN DEFAULT TRUE,
             role TEXT DEFAULT 'user'
         )
-
     """)
 
-    # 2️⃣ Create todos table with owner FK
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS todos (
             id SERIAL PRIMARY KEY,
