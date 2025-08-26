@@ -29,7 +29,6 @@ spec:
               value: "mypassword"
             - name: POSTGRES_DB
               value: "my_first_db"
-            # ✅ Tell Postgres to use a subdirectory
             - name: PGDATA
               value: "/var/lib/postgresql/data/pgdata"
           volumeMounts:
@@ -52,6 +51,7 @@ spec:
     - port: 5432
       targetPort: 5432
   type: ClusterIP
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -95,14 +95,13 @@ spec:
               done
       containers:
         - name: backend
-          image: 1234suhas/fastapi-backend:latest  # Replace with your backend image
+          image: 1234suhas/fastapi-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
             - name: DATABASE_URL
               value: "postgresql://postgres:mypassword@postgres-service:5432/my_first_db"
-              
             - name: APPLICATIONINSIGHTS_CONNECTION_STRING
               value: "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d53a3c36-7cd0-4f88-89e1-23436f79ffc2"
 
@@ -117,7 +116,7 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
-  type: LoadBalancer
+  type: ClusterIP
 
 ##########################
 # FRONTEND DEPLOYMENT
@@ -128,6 +127,7 @@ metadata:
   name: frontend-config
 data:
   REACT_APP_BACKEND_URL: "http://backend-service:8000"
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -145,7 +145,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 1234suhas/todo-frontend:latest  # Replace with your frontend image
+          image: 1234suhas/todo-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -155,6 +155,7 @@ spec:
                 configMapKeyRef:
                   name: frontend-config
                   key: REACT_APP_BACKEND_URL
+
 ---
 apiVersion: v1
 kind: Service
@@ -166,4 +167,33 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-  type: LoadBalancer
+  type: ClusterIP
+
+##########################
+# INGRESS
+##########################
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: todoapp.nip.io   # Replace with your domain or use nip.io for testing
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
