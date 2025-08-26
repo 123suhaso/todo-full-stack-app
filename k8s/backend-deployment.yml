@@ -157,6 +157,7 @@ spec:
                   key: REACT_APP_BACKEND_URL
 
 ---
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -167,4 +168,5 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-  type: ClusterIP
+  type: LoadBalancer
+
