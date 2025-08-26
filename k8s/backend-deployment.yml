@@ -116,7 +116,7 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
-  type: ClusterIP
+  type: LoadBalancer
 
 ##########################
 # FRONTEND DEPLOYMENT
@@ -157,7 +157,6 @@ spec:
                   key: REACT_APP_BACKEND_URL
 
 ---
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -169,4 +168,3 @@ spec:
     - port: 80
       targetPort: 80
   type: LoadBalancer
-
