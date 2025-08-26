@@ -20,7 +20,7 @@ from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter, Azur
 # Connection string (set via K8s env var)
 connection_string = os.getenv(
     "APPLICATIONINSIGHTS_CONNECTION_STRING",
-    "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
+    "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d53a3c36-7cd0-4f88-89e1-23436f79ffc2"
 )
 
 # Resource attributes
