@@ -103,7 +103,7 @@ spec:
               value: "postgresql://postgres:mypassword@postgres-service:5432/my_first_db"
               
             - name: APPLICATIONINSIGHTS_CONNECTION_STRING
-              value: "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf"
+              value: "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d53a3c36-7cd0-4f88-89e1-23436f79ffc2"
 
 ---
 apiVersion: v1
