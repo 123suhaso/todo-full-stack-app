@@ -52,6 +52,17 @@ def health_check():
     logger.info("Health check called")
     return {"status": "ok"}
 
+@app.get("/test-ai")
+def test_ai():
+    logger.info("Test event sent")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1")
+    cursor.close()
+    conn.close()
+    return {"status": "test sent"}
+
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
