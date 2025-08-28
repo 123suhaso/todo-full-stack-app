@@ -5,24 +5,15 @@ FROM python:3.11 AS builder
 
 WORKDIR /app
 
-# Install build dependencies for psycopg2
 RUN apt-get update && \
     apt-get install -y build-essential libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install dependencies in isolated location
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
 
-# Install OpenTelemetry + Azure Monitor explicitly
-RUN pip install --prefix=/install --no-cache-dir \
-    opentelemetry-distro \
-    azure-monitor-opentelemetry \
-    opentelemetry-exporter-otlp \
-    opentelemetry-sdk \
-    opentelemetry-instrumentation-fastapi \
-    opentelemetry-instrumentation-logging
+RUN pip install --upgrade pip
+# ✅ Use system install instead of --prefix
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ------------------------------
 # Stage 2: Production
@@ -31,14 +22,11 @@ FROM python:3.11
 
 WORKDIR /app
 
-# Copy installed Python packages from builder
-COPY --from=builder /install /usr/local
+# ✅ Copy installed packages from builder
+COPY --from=builder /usr/local /usr/local
 
-# Copy app code
 COPY . .
 
-# Expose FastAPI port
 EXPOSE 8000
 
-# Start FastAPI with OpenTelemetry auto-instrumentation
-CMD ["opentelemetry-instrument", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
