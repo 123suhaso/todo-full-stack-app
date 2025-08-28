@@ -5,26 +5,21 @@ from db import get_db_connection
 from routers111 import todo, auth
 
 # ----------------- OpenTelemetry -----------------
-import logging
 import os
+import logging
 
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs import LogEmitterProvider, LogEmitter
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
 from azure.monitor.opentelemetry.exporter import (
     AzureMonitorTraceExporter,
-    AzureMonitorLogExporter,
     AzureMonitorMetricExporter,
 )
 
@@ -41,16 +36,6 @@ trace_provider = TracerProvider(resource=resource)
 trace.set_tracer_provider(trace_provider)
 trace_exporter = AzureMonitorTraceExporter.from_connection_string(connection_string)
 trace_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
-
-# ----------------- Logging -----------------
-log_exporter = AzureMonitorLogExporter.from_connection_string(connection_string)
-logger_provider = LoggerProvider(resource=resource)
-logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
-
-logging_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
-logging.getLogger().addHandler(logging_handler)
-logger = logging.getLogger("fastapi-app")
-logger.setLevel(logging.INFO)
 
 # ----------------- Metrics -----------------
 metric_exporter = AzureMonitorMetricExporter.from_connection_string(connection_string)
@@ -69,7 +54,16 @@ app = FastAPI()
 # Instrument FastAPI + Requests
 FastAPIInstrumentor.instrument_app(app)
 RequestsInstrumentor().instrument()
-LoggingInstrumentor().instrument(set_logging_format=True)
+
+# Setup a simple logger for your app
+logger = logging.getLogger("fastapi-app")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 # ----------------- Routes -----------------
 @app.get("/health")
