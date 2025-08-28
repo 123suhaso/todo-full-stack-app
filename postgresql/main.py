@@ -8,37 +8,60 @@ from routers111 import todo, auth
 import logging
 import os
 
-from opentelemetry import trace
+from opentelemetry import trace, metrics
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs import LogEmitterProvider, LogEmitter
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
-from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter, AzureMonitorLogExporter
 
-# Connection string (set via K8s env var)
-connection_string = os.getenv(
-    "APPLICATIONINSIGHTS_CONNECTION_STRING",
-    "InstrumentationKey=4942b6f7-86ab-49a0-9c2b-26b022ab12cf;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d53a3c36-7cd0-4f88-89e1-23436f79ffc2"
+from azure.monitor.opentelemetry.exporter import (
+    AzureMonitorTraceExporter,
+    AzureMonitorLogExporter,
+    AzureMonitorMetricExporter,
 )
 
-# Resource attributes
+# ----------------- Azure Connection String -----------------
+connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+if not connection_string:
+    raise ValueError("❌ APPLICATIONINSIGHTS_CONNECTION_STRING not set in environment!")
+
+# ----------------- Resource -----------------
 resource = Resource.create({"service.name": "fastapi-backend"})
 
-# Setup tracing
+# ----------------- Tracing -----------------
 trace_provider = TracerProvider(resource=resource)
 trace.set_tracer_provider(trace_provider)
-
 trace_exporter = AzureMonitorTraceExporter.from_connection_string(connection_string)
 trace_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
 
-# Setup logging
-LoggingInstrumentor().instrument(set_logging_format=True)
+# ----------------- Logging -----------------
 log_exporter = AzureMonitorLogExporter.from_connection_string(connection_string)
+logger_provider = LoggerProvider(resource=resource)
+logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
 
-logger = logging.getLogger(__name__)
+logging_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
+logging.getLogger().addHandler(logging_handler)
+logger = logging.getLogger("fastapi-app")
 logger.setLevel(logging.INFO)
+
+# ----------------- Metrics -----------------
+metric_exporter = AzureMonitorMetricExporter.from_connection_string(connection_string)
+reader = PeriodicExportingMetricReader(metric_exporter)
+metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=[reader]))
+meter = metrics.get_meter("fastapi-backend")
+request_counter = meter.create_counter(
+    name="requests.count",
+    description="Number of requests received",
+    unit="1"
+)
 
 # ----------------- FastAPI -----------------
 app = FastAPI()
@@ -46,15 +69,19 @@ app = FastAPI()
 # Instrument FastAPI + Requests
 FastAPIInstrumentor.instrument_app(app)
 RequestsInstrumentor().instrument()
+LoggingInstrumentor().instrument(set_logging_format=True)
 
+# ----------------- Routes -----------------
 @app.get("/health")
 def health_check():
     logger.info("Health check called")
+    request_counter.add(1, {"endpoint": "health"})
     return {"status": "ok"}
 
 @app.get("/test-ai")
 def test_ai():
-    logger.info("Test event sent")
+    logger.info("Test AI event sent")
+    request_counter.add(1, {"endpoint": "test-ai"})
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT 1")
@@ -62,8 +89,7 @@ def test_ai():
     conn.close()
     return {"status": "test sent"}
 
-
-# CORS
+# ----------------- CORS -----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -72,11 +98,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
+# ----------------- Routers -----------------
 app.include_router(todo.router)
 app.include_router(auth.router)
 
-# Startup (DB init)
+# ----------------- Startup DB Init -----------------
 @app.on_event("startup")
 def startup():
     conn = get_db_connection()
@@ -111,3 +137,4 @@ def startup():
     conn.commit()
     cursor.close()
     conn.close()
+    logger.info("✅ Database initialized and telemetry enabled")
