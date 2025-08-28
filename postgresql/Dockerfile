@@ -15,6 +15,15 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
 
+# Install OpenTelemetry + Azure Monitor explicitly
+RUN pip install --prefix=/install --no-cache-dir \
+    opentelemetry-distro \
+    azure-monitor-opentelemetry \
+    opentelemetry-exporter-otlp \
+    opentelemetry-sdk \
+    opentelemetry-instrumentation-fastapi \
+    opentelemetry-instrumentation-logging
+
 # ------------------------------
 # Stage 2: Production
 # ------------------------------
@@ -31,5 +40,5 @@ COPY . .
 # Expose FastAPI port
 EXPOSE 8000
 
-# Start FastAPI directly (no internal wait)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start FastAPI with OpenTelemetry auto-instrumentation
+CMD ["opentelemetry-instrument", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
