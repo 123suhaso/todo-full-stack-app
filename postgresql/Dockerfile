@@ -3,7 +3,6 @@
 # -----------------------------
 FROM python:3.11-slim AS builder
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
@@ -14,10 +13,10 @@ RUN apt-get update && \
 # Copy requirements
 COPY requirements.txt .
 
-# Upgrade pip, setuptools, wheel to latest
+# Upgrade pip, setuptools, wheel
 RUN python -m pip install --upgrade pip setuptools wheel
 
-# Install Python dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # -----------------------------
@@ -27,14 +26,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy installed Python packages from builder
+# Copy installed Python packages
 COPY --from=builder /usr/local /usr/local
 
 # Copy app code
 COPY . .
 
-# Expose port for FastAPI
+# Expose FastAPI port
 EXPOSE 8000
 
-# Command to run the app
+# Run the app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
