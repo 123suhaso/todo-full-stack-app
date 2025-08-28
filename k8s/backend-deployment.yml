@@ -1,6 +1,6 @@
 ########################
 # POSTGRES DEPLOYMENT
-#########################
+########################
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,7 +60,8 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: managed-premium
+  # Change this to match your cluster
+  storageClassName: managed-csi
   resources:
     requests:
       storage: 5Gi
@@ -84,7 +85,7 @@ spec:
     spec:
       initContainers:
         - name: wait-for-postgres
-          image: busybox
+          image: busybox:1.35
           command:
             - sh
             - -c
@@ -126,7 +127,8 @@ kind: ConfigMap
 metadata:
   name: frontend-config
 data:
-  REACT_APP_BACKEND_URL: "http://backend-service:8000"
+  # Replace with backend LoadBalancer EXTERNAL-IP
+  REACT_APP_BACKEND_URL: "http://<BACKEND-EXTERNAL-IP>:8000"
 
 ---
 apiVersion: apps/v1
