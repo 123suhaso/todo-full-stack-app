@@ -263,7 +263,7 @@ export default function App() {
       {/* -------- Login -------- */}
       {view === "login" && (
         <>
-          <h2>Login</h2>
+          <h2>Login Page</h2>
           <form onSubmit={handleLogin}>
             <input
               type="text"
