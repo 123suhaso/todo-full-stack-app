@@ -60,11 +60,11 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  # Change this to match your cluster
   storageClassName: managed-csi
   resources:
     requests:
       storage: 5Gi
+
 
 ##########################
 # BACKEND DEPLOYMENT
@@ -82,6 +82,8 @@ spec:
     metadata:
       labels:
         app: backend
+      annotations:
+        instrumentation.monitor.azure.com/instrumentation-resource: default   # <-- Added
     spec:
       initContainers:
         - name: wait-for-postgres
@@ -119,6 +121,7 @@ spec:
       targetPort: 8000
   type: LoadBalancer
 
+
 ##########################
 # FRONTEND DEPLOYMENT
 ##########################
@@ -144,6 +147,9 @@ spec:
     metadata:
       labels:
         app: frontend
+      # Uncomment if you want server-side telemetry for frontend container
+      # annotations:
+      #   instrumentation.monitor.azure.com/instrumentation-resource: default
     spec:
       containers:
         - name: frontend
